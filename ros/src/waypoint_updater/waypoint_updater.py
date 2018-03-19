@@ -38,88 +38,13 @@ class WaypointUpdater(object):
         # TODO: Add other member variables you need below
 
         rospy.spin()
-		
-		shortest_dist = 65535
-		nearest_waypoint_idx = 0
-		r = rospy.Rate(50) # 50hz sampling rate
-		while not rospy.is_shutdown():
-		    self.loop()
-		
-    def loop(self):
-	    # step 1. find out the nearest waypoint to the current position
-		# current x & y coordinates. Shall we include z???
-		current_pose_x = self.current_pose.pose.position.x
-		current_pose_y = self.current_pose.pose.position.y 
-		# for each waypoint of the base_waypoints, calculate the distance from the current position, find out the nearest waypoint index
-		for i in range(len(self.base_waypoints)):
-		    # base waypoint x & y coordinates. Shall we include z???
-		    base_waypoint_x = self.base_waypoints[i].pose.pose.position.x
-			base_waypoint_y = self.base_waypoints[i].pose.pose.position.y
-			distance = math.sqrt((current_pose_x - base_waypoint_x)**2 + (current_pose_y - base_waypoint_y)**2)
-			if distance < shortest_distance:
-			    shortest_distance = distance
-			    nearest_waypoint_idx = i
-	
-	    # step 2. TODO: the nearest waypoint might be behind the car, we need to check if the nearest waypoint is at the current heading direction. We need to utilize the orientation info from the PoseStampd message
-		
-		# step 3. TODO: append the 200 LOOKAHEAD waypoints for the final_waypoints_pub	
-	
-	    r.sleep()
-	
 
     def pose_cb(self, msg):
         # TODO: Implement
-		'''msg type geometry_msgs/PoseStamped
-		   geometry_msgs/Pose pose 
-		     geometry_msgs/Point position
-		       float64 x
-			   float64 y 
-			   float64 z 
-		     geometry_msgs/Quaternion orientation
-			   float64 x 
-			   float64 y 
-			   float64 z 
-			   float64 w 
-		'''
-		self.current_pose = msg
         pass
 
     def waypoints_cb(self, waypoints):
         # TODO: Implement
-		'''waypoints message type styx_msgs/Lane
-           styx_msgs/Waypoint[] waypoints
-             geometry_msgs/PoseStamped pose
-               std_msgs/Header header
-                 uint32 seq
-                 time stamp
-                 string frame_id
-               geometry_msgs/Pose pose
-                 geometry_msgs/Point position
-                   float64 x
-                   float64 y
-                   float64 z
-                 geometry_msgs/Quaternion orientation
-                   float64 x
-                   float64 y
-                   float64 z
-                   float64 w
-               geometry_msgs/TwistStamped twist
-                 std_msgs/Header header
-                   uint32 seq
-                   time stamp
-                   string frame_id
-                 geometry_msgs/Twist twist
-                   geometry_msgs/Vector3 linear
-                     float64 x
-                     float64 y
-                     float64 z
-                   geometry_msgs/Vector3 angular
-                     float64 x
-                     float64 y
-                     float64 z
-		'''
-		# get the waypoint list from the Lane message
-		self.base_waypoints = waypoints.waypoints
         pass
 
     def traffic_cb(self, msg):
