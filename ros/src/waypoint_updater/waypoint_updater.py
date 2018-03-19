@@ -39,8 +39,6 @@ class WaypointUpdater(object):
         # TODO: Add other member variables you need below
 
         rospy.spin()
-        shortest_dist = 65535
-        nearest_waypoint_idx = 0
         self.rate = rospy.Rate(50) # 50hz sampling rate
         while not rospy.is_shutdown():
             self.loop()
@@ -50,12 +48,20 @@ class WaypointUpdater(object):
         # current x & y coordinates. Shall we include z???
         current_pose_x = self.current_pose.pose.position.x
         current_pose_y = self.current_pose.pose.position.y
+        current_pose_z = self.current_pose.pose.position.z
         shortest_distance = +np.inf
+        nearest_waypoint_idx = 0
+        roll, pitch, yaw = quaternion_to_euler_angle(self.current_pose.pose.orientation.w,
+                                                     self.current_pose.pose.orientation.x,
+                                                     self.current_pose.pose.orientation.y,
+                                                     self.current_pose.pose.orientation.z)
+
         # for each waypoint of the base_waypoints, calculate the distance from the current position, find out the nearest waypoint index
         for i in range(len(self.base_waypoints)):
             # base waypoint x & y coordinates. Shall we include z???
             base_waypoint_x = self.base_waypoints[i].pose.pose.position.x
             base_waypoint_y = self.base_waypoints[i].pose.pose.position.y
+            base_waypoint_z = self.base_waypoints[i].pose.pose.position.z
             distance = math.sqrt((current_pose_x - base_waypoint_x)**2 + (current_pose_y - base_waypoint_y)**2)
             if distance < shortest_distance:
                 shortest_distance = distance
@@ -145,6 +151,26 @@ class WaypointUpdater(object):
             wp1 = i
         return dist
 
+def quaternion_to_euler_angle(w, x, y, z):
+    """
+    helper function to convert quaternion to euler angle
+    """
+    ysqr = y * y
+    
+    t0 = +2.0 * (w * x + y * z)
+    t1 = +1.0 - 2.0 * (x * x + ysqr)
+    X = math.degrees(math.atan2(t0, t1)) #roll
+
+    t2 = +2.0 * (w * y - z * x)
+    t2 = +1.0 if t2 > +1.0 else t2
+    t2 = -1.0 if t2 < -1.0 else t2
+    Y = math.degrees(math.asin(t2)) #pitch
+
+    t3 = +2.0 * (w * z + x * y)
+    t4 = +1.0 - 2.0 * (ysqr + z * z)
+    Z = math.degrees(math.atan2(t3, t4)) #yaw
+
+    return X, Y, Z
 
 if __name__ == '__main__':
     try:
