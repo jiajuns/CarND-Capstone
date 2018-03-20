@@ -32,7 +32,7 @@ class WaypointUpdater(object):
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
-
+        rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
@@ -63,14 +63,32 @@ class WaypointUpdater(object):
             base_waypoint_y = self.base_waypoints[i].pose.pose.position.y
             base_waypoint_z = self.base_waypoints[i].pose.pose.position.z
             distance = np.sqrt((current_pose_x - base_waypoint_x)**2 + (current_pose_y - base_waypoint_y)**2 + (current_pose_z - base_waypoint_z)**2)
-            wp_yaw = np.arctan2((base_waypoint_y - current_pose_y), (base_waypoint_x - current_pose_x)) # I`m not too sure about this part
+            #wp_yaw = np.arctan2((base_waypoint_y - current_pose_y), (base_waypoint_x - current_pose_x)) # I`m not too sure about this part
             if distance < shortest_distance:
                 shortest_distance = distance
                 nearest_waypoint_idx = i
     
-        # step 2. TODO: the nearest waypoint might be behind the car, we need to check if the nearest waypoint is at the current heading direction. We need to utilize the orientation info from the PoseStampd message
-        
-        # step 3. TODO: append the 200 LOOKAHEAD waypoints for the final_waypoints_pub    
+        # step 2. the nearest waypoint might be behind the car, we need to check if the nearest waypoint is at the current heading direction. We need to utilize the orientation info from the PoseStampd message
+		nearest_waypoint_x = self.base_waypoints[nearest_waypoint_idx].pose.pose.position.x
+		nearest_waypoint_y = self.base_waypoints[nearest_waypoint_idx].pose.pose.position.y
+		wp_yaw = np.arctan2((nearest_waypoint_y - current_pose_y), (nearest_waypoint_x - current_pose_x)) # I`m not too sure about this part
+		
+		# calculate the angle between car's yaw and wp_yaw, only accept the waypoint if the angle is less than 45 degree, otherwise, use the next waypoint as the first lookahead waypoint. Then append the next 200 base waypoints as the lookahead waypoints. Rollover to the first base waypoint when the loop reaches the end of the base waypoint list.
+		theta = yaw - wp_yaw
+		lookahead_waypoints = []
+		if abs(theta) < np.pi/4:
+			for i in range(LOOKAHEAD_WPS):
+			    waypoint_idx = (nearest_waypoint_idx + i) % len(self.base_waypoints)
+			    lookahead_waypoints.append(self.base_waypoints[waypoint_idx])
+        else:
+		    for i in range(LOOKAHEAD_WPS):
+			    waypoint_idx = (nearest_waypoint_idx + 1 + i) % len(self.base_waypoints)
+			    lookahead_waypoints.append(self.base_waypoints[waypoint_idx])
+		    
+        # create an empty Lane message to hold the lookahead_waypoints
+		lane = Lane()
+		lane.waypoints = lookahead_waypoints
+		self.final_waypoints_pub.publish(lane)    
     
         self.rate.sleep()
     
@@ -132,6 +150,7 @@ class WaypointUpdater(object):
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
+		self.stop_waypoint_idx = msg
         pass
 
     def obstacle_cb(self, msg):
