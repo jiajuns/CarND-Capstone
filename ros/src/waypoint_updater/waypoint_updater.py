@@ -3,7 +3,7 @@
 import rospy
 import numpy as np
 import math
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, TwistStamped
 from styx_msgs.msg import Lane, Waypoint
 
 '''
@@ -22,6 +22,8 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
 LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
+NORMAL_DECEL = 3 # m/s^2
+MAX_DECEL = 9.5 # m/2^2
 
 
 class WaypointUpdater(object):
@@ -34,6 +36,8 @@ class WaypointUpdater(object):
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
         rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
 
+        rospy.Subscriber('/current_velocity', TwistStamped, self.velocity_cb)
+		
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
         # TODO: Add other member variables you need below
@@ -69,27 +73,48 @@ class WaypointUpdater(object):
                 nearest_waypoint_idx = i
     
         # step 2. the nearest waypoint might be behind the car, we need to check if the nearest waypoint is at the current heading direction. We need to utilize the orientation info from the PoseStampd message
-		nearest_waypoint_x = self.base_waypoints[nearest_waypoint_idx].pose.pose.position.x
-		nearest_waypoint_y = self.base_waypoints[nearest_waypoint_idx].pose.pose.position.y
-		wp_yaw = np.arctan2((nearest_waypoint_y - current_pose_y), (nearest_waypoint_x - current_pose_x)) # I`m not too sure about this part
+        nearest_waypoint_x = self.base_waypoints[nearest_waypoint_idx].pose.pose.position.x
+        nearest_waypoint_y = self.base_waypoints[nearest_waypoint_idx].pose.pose.position.y
+	    wp_yaw = np.arctan2((nearest_waypoint_y - current_pose_y), (nearest_waypoint_x - current_pose_x)) # I`m not too sure about this part
 		
-		# calculate the angle between car's yaw and wp_yaw, only accept the waypoint if the angle is less than 45 degree, otherwise, use the next waypoint as the first lookahead waypoint. Then append the next 200 base waypoints as the lookahead waypoints. Rollover to the first base waypoint when the loop reaches the end of the base waypoint list.
-		theta = yaw - wp_yaw
-		lookahead_waypoints = []
-		if abs(theta) < np.pi/4:
-			for i in range(LOOKAHEAD_WPS):
-			    waypoint_idx = (nearest_waypoint_idx + i) % len(self.base_waypoints)
-			    lookahead_waypoints.append(self.base_waypoints[waypoint_idx])
+        # calculate the angle between car's yaw and wp_yaw, only accept the waypoint if the angle is less than 45 degree, otherwise, use the next waypoint as the first lookahead waypoint. Then append the next 200 base waypoints as the lookahead waypoints. Rollover to the first base waypoint when the loop reaches the end of the base waypoint list.
+        theta = yaw - wp_yaw
+        lookahead_waypoints = []
+        if abs(theta) < np.pi/4:
+            for i in range(LOOKAHEAD_WPS):
+                waypoint_idx = (nearest_waypoint_idx + i) % len(self.base_waypoints)
+                lookahead_waypoints.append(self.base_waypoints[waypoint_idx])
         else:
-		    for i in range(LOOKAHEAD_WPS):
-			    waypoint_idx = (nearest_waypoint_idx + 1 + i) % len(self.base_waypoints)
-			    lookahead_waypoints.append(self.base_waypoints[waypoint_idx])
+            for i in range(LOOKAHEAD_WPS):
+                waypoint_idx = (nearest_waypoint_idx + 1 + i) % len(self.base_waypoints)
+                lookahead_waypoints.append(self.base_waypoints[waypoint_idx])
 		    
+        # step 3. calculate the normal braking distance from the current_velocity	
+        # a=(vc-v0)/t, d=((vc+v0)/2)*t, v0=0  --> d=vc^2/(2*a)
+        normal_brake_dist = (self.current_velocity**2)/(2*NORMAL_DECEL)
+        # calculate the distance between the current position and the red light stop position. use the nearest waypoint as the current position
+        dist_to_stop = self.distance(self.base_waypoints, nearest_waypoint_idx, self.stop_waypoint_idx)
+        if dist_to_stop <= normal_brake_dist:
+            decel = (self.current_velocity**2)/(2*dist_to_stop)			
+            if decel > MAX_DECEL:
+                decel = MAX_DECEL
+            # calculate the velocity for each waypoint between the current position and red light stop line
+            for i in range(nearest_waypoint_idx, self.stop_waypoint_idx+1):
+                dist_curr_to_i = self.distance(self.base_waypoints, nearest_waypoint_idx, i)
+                # vi = sqrt(vc^2-2*a*d)
+                velocity_i = np.sqrt(self.current_velocity**2 - 2*decel*dist_curr_to_i)
+                # TODO: call set_waypoint_velocity for each waypoint in the lookahead_waypoints
+				
+        else:
+            # TODO: call set_waypoint_velocity for each waypoint in the lookahead_waypoints with self.current_velocity		
+			
+			
+			
         # create an empty Lane message to hold the lookahead_waypoints
-		lane = Lane()
-		lane.waypoints = lookahead_waypoints
-		self.final_waypoints_pub.publish(lane)    
-    
+        lane = Lane()
+        lane.waypoints = lookahead_waypoints
+        self.final_waypoints_pub.publish(lane)    
+   
         self.rate.sleep()
     
 
@@ -150,12 +175,28 @@ class WaypointUpdater(object):
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
-		self.stop_waypoint_idx = msg
+        self.stop_waypoint_idx = msg
         pass
 
     def obstacle_cb(self, msg):
         # TODO: Callback for /obstacle_waypoint message. We will implement it later
         pass
+		
+    def velocity_cb(self, msg):
+		'''msg type geometry_msgs/TwistStamped
+		   geometry_msgs/Twist twist
+             geometry_msgs/Vector3 linear
+               float64 x
+               float64 y
+               float64 z
+             geometry_msgs/Vector3 angular
+               float64 x
+               float64 y
+               float64 z
+		'''
+		# get the vehicle's current velocity from the simulator
+        self.current_velocity = msg.twist.linear.x
+	    pass
 
     def get_waypoint_velocity(self, waypoint):
         return waypoint.twist.twist.linear.x
