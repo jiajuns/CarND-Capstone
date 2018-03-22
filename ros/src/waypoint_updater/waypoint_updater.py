@@ -75,7 +75,7 @@ class WaypointUpdater(object):
         # step 2. the nearest waypoint might be behind the car, we need to check if the nearest waypoint is at the current heading direction. We need to utilize the orientation info from the PoseStampd message
         nearest_waypoint_x = self.base_waypoints[nearest_waypoint_idx].pose.pose.position.x
         nearest_waypoint_y = self.base_waypoints[nearest_waypoint_idx].pose.pose.position.y
-	    wp_yaw = np.arctan2((nearest_waypoint_y - current_pose_y), (nearest_waypoint_x - current_pose_x)) # I`m not too sure about this part
+        wp_yaw = np.arctan2((nearest_waypoint_y - current_pose_y), (nearest_waypoint_x - current_pose_x)) # I`m not too sure about this part
 		
         # calculate the angle between car's yaw and wp_yaw, only accept the waypoint if the angle is less than 45 degree, otherwise, use the next waypoint as the first lookahead waypoint. Then append the next 200 base waypoints as the lookahead waypoints. Rollover to the first base waypoint when the loop reaches the end of the base waypoint list.
         theta = yaw - wp_yaw
