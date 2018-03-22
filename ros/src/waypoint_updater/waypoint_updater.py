@@ -185,8 +185,8 @@ class WaypointUpdater(object):
         pass
 		
     def velocity_cb(self, msg):
-		'''msg type geometry_msgs/TwistStamped
-		   geometry_msgs/Twist twist
+        '''msg type geometry_msgs/TwistStamped
+           geometry_msgs/Twist twist
              geometry_msgs/Vector3 linear
                float64 x
                float64 y
@@ -195,10 +195,10 @@ class WaypointUpdater(object):
                float64 x
                float64 y
                float64 z
-		'''
-		# get the vehicle's current velocity from the simulator
+        '''
+        # get the vehicle's current velocity from the simulator
         self.current_velocity = msg.twist.linear.x
-	    pass
+        pass
 
     def get_waypoint_velocity(self, waypoint):
         return waypoint.twist.twist.linear.x
