@@ -34,10 +34,10 @@ class WaypointUpdater(object):
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
-        rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
-
+        rospy.Subscriber('/traffic_waypoint', Waypoint, self.traffic_cb)
+        rospy.Subscriber('/obstacle_waypoint', Waypoint, self.obstacle_cb)
         rospy.Subscriber('/current_velocity', TwistStamped, self.velocity_cb)
-		
+
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
         # TODO: Add other member variables you need below
@@ -46,7 +46,7 @@ class WaypointUpdater(object):
         self.rate = rospy.Rate(50) # 50hz sampling rate
         while not rospy.is_shutdown():
             self.loop()
-        
+
     def loop(self):
         # step 1. find out the nearest waypoint to the current position
         # current x & y coordinates. Shall we include z???
@@ -62,25 +62,24 @@ class WaypointUpdater(object):
 
         # for each waypoint of the base_waypoints, calculate the distance from the current position, find out the nearest waypoint index
         for i in range(len(self.base_waypoints)):
-            # base waypoint x & y coordinates. Shall we include z???
+            # base waypoint x & y coordinates.
             base_waypoint_x = self.base_waypoints[i].pose.pose.position.x
             base_waypoint_y = self.base_waypoints[i].pose.pose.position.y
             base_waypoint_z = self.base_waypoints[i].pose.pose.position.z
             distance = np.sqrt((current_pose_x - base_waypoint_x)**2 + (current_pose_y - base_waypoint_y)**2 + (current_pose_z - base_waypoint_z)**2)
-            #wp_yaw = np.arctan2((base_waypoint_y - current_pose_y), (base_waypoint_x - current_pose_x)) # I`m not too sure about this part
             if distance < shortest_distance:
                 shortest_distance = distance
                 nearest_waypoint_idx = i
-    
+
         # step 2. the nearest waypoint might be behind the car, we need to check if the nearest waypoint is at the current heading direction. We need to utilize the orientation info from the PoseStampd message
         nearest_waypoint_x = self.base_waypoints[nearest_waypoint_idx].pose.pose.position.x
         nearest_waypoint_y = self.base_waypoints[nearest_waypoint_idx].pose.pose.position.y
         wp_yaw = np.arctan2((nearest_waypoint_y - current_pose_y), (nearest_waypoint_x - current_pose_x)) # I`m not too sure about this part
-		
+
         # calculate the angle between car's yaw and wp_yaw, only accept the waypoint if the angle is less than 45 degree, otherwise, use the next waypoint as the first lookahead waypoint. Then append the next 200 base waypoints as the lookahead waypoints. Rollover to the first base waypoint when the loop reaches the end of the base waypoint list.
         theta = yaw - wp_yaw
         lookahead_waypoints = []
-        if abs(theta) < np.pi/4:
+        if abs(theta) < np.pi/2:
             for i in range(LOOKAHEAD_WPS):
                 waypoint_idx = (nearest_waypoint_idx + i) % len(self.base_waypoints)
                 lookahead_waypoints.append(self.base_waypoints[waypoint_idx])
@@ -88,15 +87,15 @@ class WaypointUpdater(object):
             for i in range(LOOKAHEAD_WPS):
                 waypoint_idx = (nearest_waypoint_idx + 1 + i) % len(self.base_waypoints)
                 lookahead_waypoints.append(self.base_waypoints[waypoint_idx])
-		    
-        # step 3. calculate the normal braking distance from the current_velocity	
+
+        # step 3. calculate the normal braking distance from the current_velocity
         # a=(vc-v0)/t, d=((vc+v0)/2)*t, v0=0  --> d=vc^2/(2*a)
         normal_brake_dist = (self.current_velocity**2)/(2*NORMAL_DECEL)
         # calculate the distance between the current position and the red light stop position. use the nearest waypoint as the current position
         dist_to_stop = self.distance(self.base_waypoints, nearest_waypoint_idx, self.stop_waypoint_idx)
-        # if the car is getting close to the red light, start braking, otherwise, keep constant speed		
+        # if the car is getting close to the red light, start braking, otherwise, keep constant speed
         if dist_to_stop <= normal_brake_dist:
-            decel = (self.current_velocity**2)/(2*dist_to_stop)			
+            decel = (self.current_velocity**2)/(2*dist_to_stop)
             if decel > MAX_DECEL:
                 decel = MAX_DECEL
             # calculate the velocity for each waypoint between the current position and red light stop line
@@ -108,31 +107,31 @@ class WaypointUpdater(object):
                 if i < nearest_waypoint_idx + LOOKAHEAD_WPS:
                     self.set_waypoint_velocity(lookahead_waypoints, i-nearest_waypoint_idx, velocity_i)
         else:
-            # call set_waypoint_velocity for each waypoint in the lookahead_waypoints with self.current_velocity		
+            # call set_waypoint_velocity for each waypoint in the lookahead_waypoints with self.current_velocity
             for i in range(LOOKAHEAD_WPS):
-                self.set_waypoint_velocity(lookahead_waypoints, i, self.current_velocity)			
-			
+                self.set_waypoint_velocity(lookahead_waypoints, i, self.current_velocity)
+
         # create an empty Lane message to hold the lookahead_waypoints
         lane = Lane()
         lane.waypoints = lookahead_waypoints
-        self.final_waypoints_pub.publish(lane)    
-   
+        self.final_waypoints_pub.publish(lane)
+
         self.rate.sleep()
-    
+
 
     def pose_cb(self, msg):
         # TODO: Implement
         '''msg type geometry_msgs/PoseStamped
-           geometry_msgs/Pose pose 
+           geometry_msgs/Pose pose
              geometry_msgs/Point position
                float64 x
-               float64 y 
-               float64 z 
+               float64 y
+               float64 z
              geometry_msgs/Quaternion orientation
-               float64 x 
-               float64 y 
-               float64 z 
-               float64 w 
+               float64 x
+               float64 y
+               float64 z
+               float64 w
         '''
         self.current_pose = msg
         pass
@@ -183,7 +182,7 @@ class WaypointUpdater(object):
     def obstacle_cb(self, msg):
         # TODO: Callback for /obstacle_waypoint message. We will implement it later
         pass
-		
+
     def velocity_cb(self, msg):
         '''msg type geometry_msgs/TwistStamped
            geometry_msgs/Twist twist
@@ -219,7 +218,7 @@ def quaternion_to_euler_angle(w, x, y, z):
     helper function to convert quaternion to euler angle
     """
     ysqr = y * y
-    
+
     t0 = +2.0 * (w * x + y * z)
     t1 = +1.0 - 2.0 * (x * x + ysqr)
     X = math.degrees(math.atan2(t0, t1)) #roll
