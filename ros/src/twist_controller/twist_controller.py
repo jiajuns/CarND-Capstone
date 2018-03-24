@@ -50,7 +50,6 @@ class Controller(object):
             if deceleration < self.brake_deadband:
                 deceleration = 0.0
 
-            brake = deceleration * (self.vehicle_mass + self.fuel_capacity * GAS_DENSITY) * self.wheel_radius
-
+        brake = deceleration * (self.vehicle_mass + self.fuel_capacity * GAS_DENSITY) * self.wheel_radius
         # Return throttle, brake, steer
         return throttle, brake, next_steer
