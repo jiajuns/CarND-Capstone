@@ -30,7 +30,7 @@ class Controller(object):
 
     def control(self, twist_cmd, current_velocity, del_time):
         
-        lin_vel = abs(twist_cmd.twist.linear.x)
+        lin_vel = twist_cmd.twist.linear.x
         ang_vel = twist_cmd.twist.angular.z
         vel_err = lin_vel - current_velocity.twist.linear.x
 
