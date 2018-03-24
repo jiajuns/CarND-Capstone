@@ -42,7 +42,7 @@ class Controller(object):
 
         if acceleration > 0.0:
             throttle = acceleration
-            brake = 0.0
+            deceleration = 0.0
         else:
             throttle = 0.0
             deceleration = -acceleration
