@@ -5,6 +5,7 @@ import numpy as np
 import math
 from geometry_msgs.msg import PoseStamped, TwistStamped
 from styx_msgs.msg import Lane, Waypoint
+from std_msgs.msg import Int32
 
 '''
 This node will publish waypoints from the car's current position to some `x` distance ahead.
@@ -29,32 +30,31 @@ MAX_DECEL = 9.5 # m/2^2
 class WaypointUpdater(object):
     def __init__(self):
         rospy.init_node('waypoint_updater')
-		
-		self.current_pose = None
-		self.base_waypoints = None
+
+        self.current_pose = None
+        self.base_waypoints = None
 
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
-        rospy.Subscriber('/traffic_waypoint', Waypoint, self.traffic_cb)
-        rospy.Subscriber('/obstacle_waypoint', Waypoint, self.obstacle_cb)
+        rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
+        # rospy.Subscriber('/obstacle_waypoint', Waypoint, self.obstacle_cb)
         rospy.Subscriber('/current_velocity', TwistStamped, self.velocity_cb)
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
         # TODO: Add other member variables you need below
-
         #rospy.spin()
         self.rate = rospy.Rate(50) # 50hz sampling rate
         while not rospy.is_shutdown():
-		    #rospy.loginfo("WaypointUpdater goes to loop")
+            # rospy.loginfo("WaypointUpdater goes to loop")
             self.loop()
 
     def loop(self):
-	    if (self.current_pose is None) or (self.base_waypoints is None):
-		    return
-	
+        if (self.current_pose is None) or (self.base_waypoints is None):
+            return
+
         # step 1. find out the nearest waypoint to the current position
         # current x & y coordinates. Shall we include z???
         current_pose_x = self.current_pose.pose.position.x
@@ -95,28 +95,28 @@ class WaypointUpdater(object):
                 waypoint_idx = (nearest_waypoint_idx + 1 + i) % len(self.base_waypoints)
                 lookahead_waypoints.append(self.base_waypoints[waypoint_idx])
 
-        # step 3. calculate the normal braking distance from the current_velocity
-        # a=(vc-v0)/t, d=((vc+v0)/2)*t, v0=0  --> d=vc^2/(2*a)
-        normal_brake_dist = (self.current_velocity**2)/(2*NORMAL_DECEL)
-        # calculate the distance between the current position and the red light stop position. use the nearest waypoint as the current position
-        dist_to_stop = self.distance(self.base_waypoints, nearest_waypoint_idx, self.stop_waypoint_idx)
-        # if the car is getting close to the red light, start braking, otherwise, keep constant speed
-        if dist_to_stop <= normal_brake_dist:
-            decel = (self.current_velocity**2)/(2*dist_to_stop)
-            if decel > MAX_DECEL:
-                decel = MAX_DECEL
-            # calculate the velocity for each waypoint between the current position and red light stop line
-            for i in range(nearest_waypoint_idx, self.stop_waypoint_idx+1):
-                dist_curr_to_i = self.distance(self.base_waypoints, nearest_waypoint_idx, i)
-                # vi = sqrt(vc^2-2*a*d)
-                velocity_i = np.sqrt(self.current_velocity**2 - 2*decel*dist_curr_to_i)
-                # set velocity for each waypoint in the lookahead_waypoints
-                if i < nearest_waypoint_idx + LOOKAHEAD_WPS:
-                    self.set_waypoint_velocity(lookahead_waypoints, i-nearest_waypoint_idx, velocity_i)
-        else:
-            # call set_waypoint_velocity for each waypoint in the lookahead_waypoints with self.current_velocity
-            for i in range(LOOKAHEAD_WPS):
-                self.set_waypoint_velocity(lookahead_waypoints, i, self.current_velocity)
+        # # step 3. calculate the normal braking distance from the current_velocity
+        # # a=(vc-v0)/t, d=((vc+v0)/2)*t, v0=0  --> d=vc^2/(2*a)
+        # normal_brake_dist = (self.current_velocity**2)/(2*NORMAL_DECEL)
+        # # calculate the distance between the current position and the red light stop position. use the nearest waypoint as the current position
+        # dist_to_stop = self.distance(self.base_waypoints, nearest_waypoint_idx, self.stop_waypoint_idx)
+        # # if the car is getting close to the red light, start braking, otherwise, keep constant speed
+        # if dist_to_stop <= normal_brake_dist:
+        #     decel = (self.current_velocity**2)/(2*dist_to_stop)
+        #     if decel > MAX_DECEL:
+        #         decel = MAX_DECEL
+        #     # calculate the velocity for each waypoint between the current position and red light stop line
+        #     for i in range(nearest_waypoint_idx, self.stop_waypoint_idx+1):
+        #         dist_curr_to_i = self.distance(self.base_waypoints, nearest_waypoint_idx, i)
+        #         # vi = sqrt(vc^2-2*a*d)
+        #         velocity_i = np.sqrt(self.current_velocity**2 - 2*decel*dist_curr_to_i)
+        #         # set velocity for each waypoint in the lookahead_waypoints
+        #         if i < nearest_waypoint_idx + LOOKAHEAD_WPS:
+        #             self.set_waypoint_velocity(lookahead_waypoints, i-nearest_waypoint_idx, velocity_i)
+        # else:
+        #     # call set_waypoint_velocity for each waypoint in the lookahead_waypoints with self.current_velocity
+        #     for i in range(LOOKAHEAD_WPS):
+        #         self.set_waypoint_velocity(lookahead_waypoints, i, self.current_velocity)
 
         # create an empty Lane message to hold the lookahead_waypoints
         lane = Lane()
