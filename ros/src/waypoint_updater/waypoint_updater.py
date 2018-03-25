@@ -30,8 +30,8 @@ class WaypointUpdater(object):
     def __init__(self):
         rospy.init_node('waypoint_updater')
 		
-		self.current_pose = None
-		self.base_waypoints = None
+        self.current_pose = None
+        self.base_waypoints = None
 
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
@@ -48,12 +48,12 @@ class WaypointUpdater(object):
         #rospy.spin()
         self.rate = rospy.Rate(50) # 50hz sampling rate
         while not rospy.is_shutdown():
-		    #rospy.loginfo("WaypointUpdater goes to loop")
+            #rospy.loginfo("WaypointUpdater goes to loop")
             self.loop()
 
     def loop(self):
-	    if (self.current_pose is None) or (self.base_waypoints is None):
-		    return
+        if (self.current_pose is None) or (self.base_waypoints is None):
+            return
 	
         # step 1. find out the nearest waypoint to the current position
         # current x & y coordinates. Shall we include z???
