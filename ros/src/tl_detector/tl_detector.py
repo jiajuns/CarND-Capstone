@@ -21,6 +21,7 @@ class TLDetector(object):
         self.waypoints = None
         self.camera_image = None
         self.lights = []
+        self.tl_wps = []
 
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
@@ -100,8 +101,19 @@ class TLDetector(object):
             int: index of the closest waypoint in self.waypoints
 
         """
-        #TODO implement
-        return 0
+        idx = -1
+        dis_closest = -1
+
+        if self.waypoints is not None:
+            wps = self.waypoints.waypoints
+            for i in range(len(wps)):
+                wp = wps[i]
+                dist = (wp.pose.pose.position.x-pose.x)**2 + \
+                       (wp.pose.pose.position.y-pose.y)**2
+                if (dis_closest == -1) or (dis_closest > dist) :
+                    dis_closest = dist
+                    idx = i
+        return idx
 
     def get_light_state(self, light):
         """Determines the current color of the traffic light
@@ -135,10 +147,23 @@ class TLDetector(object):
 
         # List of positions that correspond to the line to stop in front of for a given intersection
         stop_line_positions = self.config['stop_line_positions']
+        if(len(self.tl_wp) == 0):
+            for stop_line in stop_line_position:
+                self.tl_wps.append(self.get_closest_waypoint(Point(stop_line)))
+
         if(self.pose):
-            car_position = self.get_closest_waypoint(self.pose.pose)
+            car_position = self.get_closest_waypoint(self.pose.pose.position)
 
         #TODO find the closest visible traffic light (if one exists)
+        nearest_diff = -1
+        idx = -1
+        for i in len(self.tl_wps):
+            diff = self.tl_wps[i] - car_position
+            if (nearest_diff == -1) or (nearest_diff > diff):
+                nearest_diff = diff
+                idx = self.tl_wps[i]
+        if idx != -1:
+            light = self.lights[idx]
 
         if light:
             state = self.get_light_state(light)
