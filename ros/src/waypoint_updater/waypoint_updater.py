@@ -102,11 +102,12 @@ class WaypointUpdater(object):
             dist_to_stop = self.distance(self.base_waypoints, nearest_waypoint_idx, self.stop_waypoint_idx)
             # if the car is getting close to the red light, start braking, otherwise, keep constant speed
             if dist_to_stop <= normal_brake_dist:
-                decel_per_dist = self.current_velocity / dist_to_stop * 1.5 # provide a factor of 1.5 to be safe
+                decel_per_dist = self.current_velocity / (dist_to_stop + 1e-12) * 2 # provide a factor of 1.5 to be safe
                 for i in range(nearest_waypoint_idx, self.stop_waypoint_idx):
                     dist_curr_to_i = self.distance(self.base_waypoints, nearest_waypoint_idx, i)
                     reduced_v = dist_curr_to_i * decel_per_dist
                     velocity_i = self.current_velocity - reduced_v
+                    velocity_i = velocity_i if velocity_i > 0 else 0.0
                     if i < nearest_waypoint_idx + LOOKAHEAD_WPS:
                         self.set_waypoint_velocity(lookahead_waypoints, i-nearest_waypoint_idx, velocity_i)
 
