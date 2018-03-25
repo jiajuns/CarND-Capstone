@@ -93,29 +93,30 @@ class WaypointUpdater(object):
                 waypoint_idx = (nearest_waypoint_idx + 1 + i) % len(self.base_waypoints)
                 lookahead_waypoints.append(self.base_waypoints[waypoint_idx])
 
-        # # step 3. calculate the normal braking distance from the current_velocity
-        # # a=(vc-v0)/t, d=((vc+v0)/2)*t, v0=0  --> d=vc^2/(2*a)
-        # normal_brake_dist = (self.current_velocity**2)/(2*NORMAL_DECEL)
-        # # calculate the distance between the current position and the red light stop position. use the nearest waypoint as the current position
-        # dist_to_stop = self.distance(self.base_waypoints, nearest_waypoint_idx, self.stop_waypoint_idx)
-        # # if the car is getting close to the red light, start braking, otherwise, keep constant speed
-        # if dist_to_stop <= normal_brake_dist:
-        #     decel = (self.current_velocity**2)/(2*dist_to_stop)
-        #     if decel > MAX_DECEL:
-        #         decel = MAX_DECEL
-        #     # calculate the velocity for each waypoint between the current position and red light stop line
-        #     for i in range(nearest_waypoint_idx, self.stop_waypoint_idx+1):
-        #         dist_curr_to_i = self.distance(self.base_waypoints, nearest_waypoint_idx, i)
-        #         # vi = sqrt(vc^2-2*a*d)
-        #         velocity_i = np.sqrt(self.current_velocity**2 - 2*decel*dist_curr_to_i)
-        #         # set velocity for each waypoint in the lookahead_waypoints
-        #         if i < nearest_waypoint_idx + LOOKAHEAD_WPS:
-        #             self.set_waypoint_velocity(lookahead_waypoints, i-nearest_waypoint_idx, velocity_i)
-        # else:
-        #     # call set_waypoint_velocity for each waypoint in the lookahead_waypoints with self.current_velocity
-        #     for i in range(LOOKAHEAD_WPS):
-        #         self.set_waypoint_velocity(lookahead_waypoints, i, self.current_velocity)
+        # step 3. calculate the normal braking distance from the current_velocity
+        # a=(vc-v0)/t, d=((vc+v0)/2)*t, v0=0  --> d=vc^2/(2*a)
+        normal_brake_dist = (self.current_velocity**2)/(2*NORMAL_DECEL)
+        # calculate the distance between the current position and the red light stop position. use the nearest waypoint as the current position
+        dist_to_stop = self.distance(self.base_waypoints, nearest_waypoint_idx, self.stop_waypoint_idx)
+        # if the car is getting close to the red light, start braking, otherwise, keep constant speed
+        if dist_to_stop <= normal_brake_dist:
+            decel = (self.current_velocity**2)/(2*dist_to_stop)
+            if decel > MAX_DECEL:
+                decel = MAX_DECEL
+            # calculate the velocity for each waypoint between the current position and red light stop line
+            for i in range(nearest_waypoint_idx, self.stop_waypoint_idx+1):
+                dist_curr_to_i = self.distance(self.base_waypoints, nearest_waypoint_idx, i)
+                # vi = sqrt(vc^2-2*a*d)
+                velocity_i = np.sqrt(self.current_velocity**2 - 2*decel*dist_curr_to_i)
+                # set velocity for each waypoint in the lookahead_waypoints
+                if i < nearest_waypoint_idx + LOOKAHEAD_WPS:
+                    self.set_waypoint_velocity(lookahead_waypoints, i-nearest_waypoint_idx, velocity_i)
+        else:
+            # call set_waypoint_velocity for each waypoint in the lookahead_waypoints with self.current_velocity
+            for i in range(LOOKAHEAD_WPS):
+                self.set_waypoint_velocity(lookahead_waypoints, i, self.current_velocity)
 
+        rospy.loginfo(nearest_waypoint_idx)
         # create an empty Lane message to hold the lookahead_waypoints
         lane = Lane()
         lane.waypoints = lookahead_waypoints
