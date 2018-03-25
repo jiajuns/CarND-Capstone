@@ -101,9 +101,9 @@ class WaypointUpdater(object):
             # calculate the distance between the current position and the red light stop position. use the nearest waypoint as the current position
             dist_to_stop = self.distance(self.base_waypoints, nearest_waypoint_idx, self.stop_waypoint_idx)
             # if the car is getting close to the red light, start braking, otherwise, keep constant speed
-            if dist_to_stop <= normal_brake_dist and dist_to_stop > 5:
+            if dist_to_stop <= normal_brake_dist and dist_to_stop > 10:
                 rospy.loginfo(self.current_velocity)
-                decel_per_dist = self.current_velocity / (dist_to_stop + 1e-12) * 10 # provide a factor of 1.5 to be safe
+                decel_per_dist = self.current_velocity / (dist_to_stop + 1e-12) * 2 # provide a factor of 1.5 to be safe
                 for i in range(nearest_waypoint_idx, self.stop_waypoint_idx):
                     dist_curr_to_i = self.distance(self.base_waypoints, nearest_waypoint_idx, i+1)
                     reduced_v = dist_curr_to_i * decel_per_dist
@@ -111,7 +111,7 @@ class WaypointUpdater(object):
                     velocity_i = velocity_i if velocity_i > 0 else 0.0
                     if i < nearest_waypoint_idx + LOOKAHEAD_WPS:
                         self.set_waypoint_velocity(lookahead_waypoints, i-nearest_waypoint_idx, velocity_i)
-            if dist_to_stop <= 5:
+            if dist_to_stop <= 10:
                 for i in range(nearest_waypoint_idx, self.stop_waypoint_idx):
                     if i < nearest_waypoint_idx + LOOKAHEAD_WPS:
                         self.set_waypoint_velocity(lookahead_waypoints, i-nearest_waypoint_idx, 0.0)
@@ -132,7 +132,7 @@ class WaypointUpdater(object):
             #             if i == 0:
             #                 rospy.loginfo(velocity_i)
 
-        rospy.loginfo(nearest_waypoint_idx)
+        # rospy.loginfo(nearest_waypoint_idx)
         # create an empty Lane message to hold the lookahead_waypoints
         lane = Lane()
         lane.waypoints = lookahead_waypoints
