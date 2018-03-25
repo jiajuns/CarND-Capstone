@@ -101,9 +101,9 @@ class WaypointUpdater(object):
             # calculate the distance between the current position and the red light stop position. use the nearest waypoint as the current position
             dist_to_stop = self.distance(self.base_waypoints, nearest_waypoint_idx, self.stop_waypoint_idx)
             # if the car is getting close to the red light, start braking, otherwise, keep constant speed
-            rospy.loginfo(self.current_velocity)
             if dist_to_stop <= normal_brake_dist and dist_to_stop > 5:
-                decel_per_dist = self.current_velocity / (dist_to_stop + 1e-12) * 2 # provide a factor of 1.5 to be safe
+                rospy.loginfo(self.current_velocity)
+                decel_per_dist = self.current_velocity / (dist_to_stop + 1e-12) * 5 # provide a factor of 1.5 to be safe
                 for i in range(nearest_waypoint_idx, self.stop_waypoint_idx):
                     dist_curr_to_i = self.distance(self.base_waypoints, nearest_waypoint_idx, i)
                     reduced_v = dist_curr_to_i * decel_per_dist
