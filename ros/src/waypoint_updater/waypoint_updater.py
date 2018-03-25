@@ -102,19 +102,28 @@ class WaypointUpdater(object):
             dist_to_stop = self.distance(self.base_waypoints, nearest_waypoint_idx, self.stop_waypoint_idx)
             # if the car is getting close to the red light, start braking, otherwise, keep constant speed
             if dist_to_stop <= normal_brake_dist:
-                decel = (self.current_velocity**2)/(2*dist_to_stop + 1e-12)
-                if decel > MAX_DECEL:
-                    decel = MAX_DECEL
-                # calculate the velocity for each waypoint between the current position and red light stop line
-                for i in range(nearest_waypoint_idx, self.stop_waypoint_idx+1):
+                decel_per_dist = self.current_velocity / dist_to_stop * 1.5 # provide a factor of 1.5 to be safe
+                for i in range(nearest_waypoint_idx, self.stop_waypoint_idx):
                     dist_curr_to_i = self.distance(self.base_waypoints, nearest_waypoint_idx, i)
-                    # vi = sqrt(vc^2-2*a*d)
-                    velocity_i = np.sqrt(self.current_velocity**2 - 2*decel*dist_curr_to_i)
-                    # set velocity for each waypoint in the lookahead_waypoints
+                    reduced_v = dist_curr_to_i * decel_per_dist
+                    velocity_i = self.current_velocity - reduced_v
                     if i < nearest_waypoint_idx + LOOKAHEAD_WPS:
                         self.set_waypoint_velocity(lookahead_waypoints, i-nearest_waypoint_idx, velocity_i)
-                        if i == 0:
-                            rospy.loginfo(velocity_i)
+
+            # if dist_to_stop <= normal_brake_dist:
+            #     decel = (self.current_velocity**2)/(2*dist_to_stop + 1e-12)
+            #     if decel > MAX_DECEL:
+            #         decel = MAX_DECEL
+            #     # calculate the velocity for each waypoint between the current position and red light stop line
+            #     for i in range(nearest_waypoint_idx, self.stop_waypoint_idx+1):
+            #         dist_curr_to_i = self.distance(self.base_waypoints, nearest_waypoint_idx, i)
+            #         # vi = sqrt(vc^2-2*a*d)
+            #         velocity_i = np.sqrt(self.current_velocity**2 - 2*decel*dist_curr_to_i)
+            #         # set velocity for each waypoint in the lookahead_waypoints
+            #         if i < nearest_waypoint_idx + LOOKAHEAD_WPS:
+            #             self.set_waypoint_velocity(lookahead_waypoints, i-nearest_waypoint_idx, velocity_i)
+            #             if i == 0:
+            #                 rospy.loginfo(velocity_i)
 
         rospy.loginfo(nearest_waypoint_idx)
         # create an empty Lane message to hold the lookahead_waypoints
