@@ -105,7 +105,7 @@ class WaypointUpdater(object):
                 rospy.loginfo(self.current_velocity)
                 decel_per_dist = self.current_velocity / (dist_to_stop + 1e-12) * 10 # provide a factor of 1.5 to be safe
                 for i in range(nearest_waypoint_idx, self.stop_waypoint_idx):
-                    dist_curr_to_i = self.distance(self.base_waypoints, nearest_waypoint_idx, i)
+                    dist_curr_to_i = self.distance(self.base_waypoints, nearest_waypoint_idx, i+1)
                     reduced_v = dist_curr_to_i * decel_per_dist
                     velocity_i = self.current_velocity - reduced_v
                     velocity_i = velocity_i if velocity_i > 0 else 0.0
