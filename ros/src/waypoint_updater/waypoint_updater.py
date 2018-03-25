@@ -32,7 +32,7 @@ class WaypointUpdater(object):
         rospy.init_node('waypoint_updater')
         self.current_pose = None
         self.base_waypoints = None
-        self.stop_waypoint_idx = None
+        self.stop_waypoint_idx = 400
 
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
@@ -102,7 +102,7 @@ class WaypointUpdater(object):
             dist_to_stop = self.distance(self.base_waypoints, nearest_waypoint_idx, self.stop_waypoint_idx)
             # if the car is getting close to the red light, start braking, otherwise, keep constant speed
             if dist_to_stop <= normal_brake_dist:
-                decel = (self.current_velocity**2)/(2*dist_to_stop)
+                decel = (self.current_velocity**2)/(2*dist_to_stop + 1e-12)
                 if decel > MAX_DECEL:
                     decel = MAX_DECEL
                 # calculate the velocity for each waypoint between the current position and red light stop line
@@ -113,10 +113,8 @@ class WaypointUpdater(object):
                     # set velocity for each waypoint in the lookahead_waypoints
                     if i < nearest_waypoint_idx + LOOKAHEAD_WPS:
                         self.set_waypoint_velocity(lookahead_waypoints, i-nearest_waypoint_idx, velocity_i)
-            else:
-                # call set_waypoint_velocity for each waypoint in the lookahead_waypoints with self.current_velocity
-                for i in range(LOOKAHEAD_WPS):
-                    self.set_waypoint_velocity(lookahead_waypoints, i, self.current_velocity)
+                        if i == 0:
+                            rospy.loginfo(velocity_i)
 
         rospy.loginfo(nearest_waypoint_idx)
         # create an empty Lane message to hold the lookahead_waypoints
