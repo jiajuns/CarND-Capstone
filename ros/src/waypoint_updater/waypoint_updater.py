@@ -42,7 +42,7 @@ class WaypointUpdater(object):
 
         # TODO: Add other member variables you need below
 
-        rospy.spin()
+        #rospy.spin()
         self.rate = rospy.Rate(50) # 50hz sampling rate
         while not rospy.is_shutdown():
             self.loop()
@@ -134,7 +134,7 @@ class WaypointUpdater(object):
                float64 w
         '''
         self.current_pose = msg
-        pass
+        #pass
 
     def waypoints_cb(self, waypoints):
         # TODO: Implement
@@ -172,12 +172,12 @@ class WaypointUpdater(object):
         '''
         # get the waypoint list from the Lane message
         self.base_waypoints = waypoints.waypoints
-        pass
+        #pass
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
         self.stop_waypoint_idx = msg
-        pass
+        #pass
 
     def obstacle_cb(self, msg):
         # TODO: Callback for /obstacle_waypoint message. We will implement it later
@@ -197,7 +197,7 @@ class WaypointUpdater(object):
         '''
         # get the vehicle's current velocity from the simulator
         self.current_velocity = msg.twist.linear.x
-        pass
+        #pass
 
     def get_waypoint_velocity(self, waypoint):
         return waypoint.twist.twist.linear.x
