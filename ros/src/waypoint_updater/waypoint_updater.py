@@ -25,14 +25,15 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
 NORMAL_DECEL = 1 # m/s^2
 MAX_DECEL = 9.5 # m/2^2
-
+REFRESH_RATE = 50 # Hz
 
 class WaypointUpdater(object):
     def __init__(self):
         rospy.init_node('waypoint_updater')
         self.current_pose = None
         self.base_waypoints = None
-        self.stop_waypoint_idx = 400
+        self.stop_waypoint_idx = 700
+		self.stopped_time = 0.0
 
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
@@ -46,10 +47,14 @@ class WaypointUpdater(object):
 
         # TODO: Add other member variables you need below
         #rospy.spin()
-        self.rate = rospy.Rate(50) # 50hz sampling rate
+        self.rate = rospy.Rate(REFRESH_RATE) # 50hz sampling rate
         while not rospy.is_shutdown():
             # rospy.loginfo("WaypointUpdater goes to loop")
             self.loop()
+            # rospy.loginfo("Vehicle stopped time: %d", self.stopped_time)
+            # if self.stopped_time >= 10: # vehicle has stopped for over 10 seconds
+                # self.stop_waypoint_idx += 400
+                # self.stopped_time = 0.0				
 
     def loop(self):
         if (self.current_pose is None) or (self.base_waypoints is None):
@@ -76,6 +81,7 @@ class WaypointUpdater(object):
             if distance < shortest_distance:
                 shortest_distance = distance
                 nearest_waypoint_idx = i
+        rospy.loginfo("nearest waypoint index is %d", nearest_waypoint_idx)
 
         # step 2. the nearest waypoint might be behind the car, we need to check if the nearest waypoint is at the current heading direction. We need to utilize the orientation info from the PoseStampd message
         nearest_waypoint_x = self.base_waypoints[nearest_waypoint_idx].pose.pose.position.x
@@ -101,9 +107,9 @@ class WaypointUpdater(object):
             # calculate the distance between the current position and the red light stop position. use the nearest waypoint as the current position
             dist_to_stop = self.distance(self.base_waypoints, nearest_waypoint_idx, self.stop_waypoint_idx)
             # if the car is getting close to the red light, start braking, otherwise, keep constant speed
-            if dist_to_stop <= normal_brake_dist and dist_to_stop > 10:
+            if dist_to_stop <= normal_brake_dist and dist_to_stop > 5:
                 rospy.loginfo(self.current_velocity)
-                decel_per_dist = self.current_velocity / (dist_to_stop + 1e-12) * 2 # provide a factor of 1.5 to be safe
+                decel_per_dist = self.current_velocity / (dist_to_stop + 1e-12) #* 2 # provide a factor of 1.5 to be safe
                 for i in range(nearest_waypoint_idx, self.stop_waypoint_idx):
                     dist_curr_to_i = self.distance(self.base_waypoints, nearest_waypoint_idx, i+1)
                     reduced_v = dist_curr_to_i * decel_per_dist
@@ -111,11 +117,14 @@ class WaypointUpdater(object):
                     velocity_i = velocity_i if velocity_i > 0 else 0.0
                     if i < nearest_waypoint_idx + LOOKAHEAD_WPS:
                         self.set_waypoint_velocity(lookahead_waypoints, i-nearest_waypoint_idx, velocity_i)
-            if dist_to_stop <= 10:
+            if dist_to_stop <= 5:
                 for i in range(nearest_waypoint_idx, self.stop_waypoint_idx):
                     if i < nearest_waypoint_idx + LOOKAHEAD_WPS:
                         self.set_waypoint_velocity(lookahead_waypoints, i-nearest_waypoint_idx, 0.0)
 
+            # rospy.loginfo("current_velocity: %f", self.current_velocity)
+            # if self.current_velocity <= 1.0:
+                # self.stopped_time = self.stopped_time + 0.02 #1/REFRESH_RATE
 
             # if dist_to_stop <= normal_brake_dist:
             #     decel = (self.current_velocity**2)/(2*dist_to_stop + 1e-12)
