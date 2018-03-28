@@ -29,7 +29,6 @@ class Controller(object):
         self.pid.reset()
 
     def control(self, twist_cmd, current_velocity, del_time):
-        
         lin_vel = twist_cmd.twist.linear.x
         ang_vel = twist_cmd.twist.angular.z
         vel_err = lin_vel - current_velocity.twist.linear.x
@@ -43,6 +42,7 @@ class Controller(object):
         if acceleration > 0.0:
             throttle = acceleration
             deceleration = 0.0
+
         else:
             throttle = 0.0
             deceleration = -acceleration
@@ -51,5 +51,6 @@ class Controller(object):
                 deceleration = 0.0
 
         brake = deceleration * (self.vehicle_mass + self.fuel_capacity * GAS_DENSITY) * self.wheel_radius
+
         # Return throttle, brake, steer
         return throttle, brake, next_steer
