@@ -12,15 +12,19 @@ from utilities import visualization_utils as vis_util
 import time
 
 class TLClassifier(object):
-    def __init__(self, sim):
+	#def __init__(self, sim):
+    def __init__(self):
 
         # set default value for no detection
         self.current_light = TrafficLight.UNKNOWN
         curr_dir = os.path.dirname(os.path.realpath(__file__))
-        if sim:
-            model = curr_dir + '/sim-udacity_model/frozen_inference_graph.pb'
-        else:
-            model = curr_dir + '/real-udacity_model/frozen_inference_graph.pb'
+		model = curr_dir + '/sim-udacity_model/frozen_inference_graph.pb'
+        
+		## this is for selecting model trained on simulator or real images:
+		#if sim:
+        #    model = curr_dir + '/sim-udacity_model/frozen_inference_graph.pb'
+        #else:
+        #    model = curr_dir + '/real-udacity_model/frozen_inference_graph.pb'
 
         labels_file = curr_dir + '/labelmap.pbtxt'
         num_classes = 4 #14
