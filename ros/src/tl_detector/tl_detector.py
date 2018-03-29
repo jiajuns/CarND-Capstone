@@ -22,6 +22,7 @@ class TLDetector(object):
         self.camera_image = None
         self.lights = []
         self.tl_wps = []
+        self.light_classifier = None
 
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
@@ -69,10 +70,11 @@ class TLDetector(object):
             msg (Image): image from car-mounted camera
 
         """
+        rospy.loginfo("Got new image!!!!")
         self.has_image = True
         self.camera_image = msg
         light_wp, state = self.process_traffic_lights()
-        rospy.loginfo("Got new image!light_wp = %s, state = %s", light_wp, state)
+        rospy.loginfo("light_wp = %s, state = %s", light_wp, state)
 
         '''
         Publish upcoming red lights at camera frequency.
@@ -133,8 +135,10 @@ class TLDetector(object):
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
 
         #Get classification
-        #return self.light_classifier.get_classification(cv_image)
-        return  TLClassifier().get_classification(cv_image)
+        if self.light_classifier is None:
+            self.light_classifier = TLClassifier()
+        return self.light_classifier.get_classification(cv_image)
+        #return  TLClassifier().get_classification(cv_image)
 
     def process_traffic_lights(self):
         """Finds closest visible traffic light, if one exists, and determines its
@@ -147,6 +151,7 @@ class TLDetector(object):
         """
         light = None
         light_wp = None
+        state = None
 
         # List of positions that correspond to the line to stop in front of for a given intersection
         stop_line_positions = self.config['stop_line_positions']
@@ -158,12 +163,12 @@ class TLDetector(object):
 
         if(self.pose):
             car_position = self.get_closest_waypoint(self.pose.pose.position)
-            #TODO find the closest visible traffic light (if one exists)
+            #TODO find the closest visible5 traffic light (if one exists)
             nearest_diff = -1
             idx = -1
             for i in range(len(self.tl_wps)):
                 diff = self.tl_wps[i] - car_position
-                if (nearest_diff == -1) or (nearest_diff > diff):
+                if (diff > 0) and ((nearest_diff == -1) or (nearest_diff > diff)):
                     nearest_diff = diff
                     idx = i
             if idx != -1:
@@ -175,8 +180,8 @@ class TLDetector(object):
             # check the result
             if light.state != TrafficLight.UNKNOWN:
                 if state != light.state:
+                    rospy.logfatal('tl_detect error, state is %s but should be %s', state, light.state)
                     state = light.state
-                    rospy.logfatal('tl_detect error, state is %s but shoud be %s', state, light.state)
             return light_wp, state
         self.waypoints = None
         return -1, TrafficLight.UNKNOWN
