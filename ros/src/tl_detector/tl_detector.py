@@ -12,6 +12,7 @@ import cv2
 import yaml
 
 STATE_COUNT_THRESHOLD = 3
+WAYPOINT_THRESHOLD = 50
 
 class TLDetector(object):
     def __init__(self):
@@ -171,7 +172,7 @@ class TLDetector(object):
                 if (diff > 0) and ((nearest_diff == -1) or (nearest_diff > diff)):
                     nearest_diff = diff
                     idx = i
-            if idx != -1:
+            if idx != -1 and nearest_diff < WAYPOINT_THRESHOLD:
                 light = self.lights[idx]
                 light_wp = self.tl_wps[idx]
 
