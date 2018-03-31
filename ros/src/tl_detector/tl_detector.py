@@ -57,7 +57,7 @@ class TLDetector(object):
         # rospy.spin()
 
     def loop(self):
-        self.rate = rospy.Rate(2) #Hz
+        self.rate = rospy.Rate(5) #Hz
         while not rospy.is_shutdown() and self.has_image:
             light_wp, state = self.process_traffic_lights()
             rospy.loginfo("light_wp = %s, state = %s", light_wp, state)
@@ -78,7 +78,7 @@ class TLDetector(object):
             else:
                 self.upcoming_red_light_pub.publish(Int32(self.last_wp))
             self.state_count += 1
-        self.rate.sleep()
+            self.rate.sleep()
 
     def pose_cb(self, msg):
         self.pose = msg
