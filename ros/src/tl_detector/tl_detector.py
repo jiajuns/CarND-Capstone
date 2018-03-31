@@ -56,7 +56,7 @@ class TLDetector(object):
         # rospy.spin()
 
     def loop(self):
-        rate = rospy.Rate(10) #Hz
+        rate = rospy.Rate(2) #Hz
         while not rospy.is_shutdown():
             rospy.loginfo("Got new image!!!!")
             light_wp, state = self.process_traffic_lights()

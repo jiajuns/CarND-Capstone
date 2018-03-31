@@ -83,7 +83,7 @@ class WaypointUpdater(object):
             if distance < shortest_distance:
                 shortest_distance = distance
                 nearest_waypoint_idx = i
-        rospy.loginfo("nearest waypoint index is %d", nearest_waypoint_idx)
+        # rospy.loginfo("nearest waypoint index is %d", nearest_waypoint_idx)
 
         # step 2. the nearest waypoint might be behind the car, we need to check if the nearest waypoint is at the current heading direction. We need to utilize the orientation info from the PoseStampd message
         nearest_waypoint_x = self.base_waypoints[nearest_waypoint_idx].pose.pose.position.x
