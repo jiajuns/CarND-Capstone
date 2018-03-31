@@ -52,33 +52,15 @@ class TLDetector(object):
         self.last_wp = -1
         self.state_count = 0
 
+        self.loop()
         # rospy.spin()
 
-    def pose_cb(self, msg):
-        self.pose = msg
-
-    def waypoints_cb(self, waypoints):
-        self.waypoints = waypoints
-
-    def traffic_cb(self, msg):
-        self.lights = msg.lights
-
-    def image_cb(self, msg):
-        """Identifies red lights in the incoming camera image and publishes the index
-            of the waypoint closest to the red light's stop line to /traffic_waypoint
-
-        Args:
-            msg (Image): image from car-mounted camera
-
-        """
-        rate = rospy.Rate(2) #Hz
+    def loop(self):
+        rate = rospy.Rate(10) #Hz
         while not rospy.is_shutdown():
             rospy.loginfo("Got new image!!!!")
-            self.has_image = True
-            self.camera_image = msg
             light_wp, state = self.process_traffic_lights()
             rospy.loginfo("light_wp = %s, state = %s", light_wp, state)
-
             '''
             Publish upcoming red lights at camera frequency.
             Each predicted state has to occur `STATE_COUNT_THRESHOLD` number
@@ -97,6 +79,27 @@ class TLDetector(object):
                 self.upcoming_red_light_pub.publish(Int32(self.last_wp))
             self.state_count += 1
         rate.sleep()
+
+    def pose_cb(self, msg):
+        self.pose = msg
+
+    def waypoints_cb(self, waypoints):
+        self.waypoints = waypoints
+
+    def traffic_cb(self, msg):
+        self.lights = msg.lights
+
+    def image_cb(self, msg):
+        """Identifies red lights in the incoming camera image and publishes the index
+            of the waypoint closest to the red light's stop line to /traffic_waypoint
+
+        Args:
+            msg (Image): image from car-mounted camera
+
+        """
+        self.has_image = True
+        self.camera_image = msg
+
 
     def get_closest_waypoint(self, pose):
         """Identifies the closest path waypoint to the given position
