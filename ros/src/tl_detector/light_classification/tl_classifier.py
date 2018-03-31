@@ -18,7 +18,7 @@ class TLClassifier(object):
         # set default value for no detection
         self.current_light = TrafficLight.UNKNOWN
         curr_dir = os.path.dirname(os.path.realpath(__file__))
-        model = curr_dir + '/sim-udacity_model/frozen_inference_graph.pb'
+        model = curr_dir + '/sim-udacity-model/frozen_inference_graph.pb'
         
 		## this is for selecting model trained on simulator or real images:
 		#if sim:
