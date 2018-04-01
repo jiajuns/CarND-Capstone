@@ -22,12 +22,12 @@ as well as to verify your TL classifier.
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
-LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
+LOOKAHEAD_WPS = 50 #200 # Number of waypoints we will publish. You can change this number
 NORMAL_DECEL = 4 # m/s^2
 MAX_DECEL = 9.5 # m/2^2
 NORMAL_ACCEL = 6 # m/s^2
 VELOCITY_30MPH = 13.3 # m/s
-REFRESH_RATE = 50 # Hz
+REFRESH_RATE = 10 #50 # Hz
 
 class WaypointUpdater(object):
     def __init__(self):
