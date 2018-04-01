@@ -55,7 +55,7 @@ class TLDetector(object):
         self.has_image = False
 
         self.drop_count = 0
-        self.drop_every_num_frames = 25
+        self.drop_every_num_frames = 2
         rospy.spin()
 
     def pose_cb(self, msg):
