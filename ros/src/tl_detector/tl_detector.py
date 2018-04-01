@@ -24,7 +24,7 @@ class TLDetector(object):
         self.lights = []
         self.tl_wps = []
         self.light_classifier = None
-		self.disable_camera = False #True
+        self.disable_camera = False #True
 
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
@@ -75,8 +75,8 @@ class TLDetector(object):
             msg (Image): image from car-mounted camera
 
         """
-		if self.disable_camera == True:
-		    return
+        if self.disable_camera == True:
+            return
 			
         self.drop_count += 1
         if self.drop_count == self.drop_every_num_frames:
