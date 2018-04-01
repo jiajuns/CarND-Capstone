@@ -102,9 +102,8 @@ class WaypointUpdater(object):
                 waypoint_idx = (nearest_waypoint_idx + 1 + i) % len(self.base_waypoints)
                 lookahead_waypoints.append(self.base_waypoints[waypoint_idx])
         
-		# step 3.
+        # step 3.
         if self.stop_waypoint_idx is not None:
-            rospy.loginfo("stop_waypoint_idx is %d", self.stop_waypoint_idx)
             if self.stop_waypoint_idx == -1:
                 # no red light detected, adjust current velocity to 30MPH
                 # calculate the distance the vehicle needs to travel from current velocity to 30mph
@@ -119,6 +118,7 @@ class WaypointUpdater(object):
                     velocity_i = velocity_i if velocity_i < VELOCITY_30MPH else VELOCITY_30MPH
                     self.set_waypoint_velocity(lookahead_waypoints, i-nearest_waypoint_idx, velocity_i)
             else:
+                rospy.loginfo("stop_waypoint_idx is %d", self.stop_waypoint_idx)
                 # red light detected			
                 # calculate the normal braking distance from the current_velocity
                 # a=(vc-v0)/t, d=((vc+v0)/2)*t, v0=0  --> d=vc^2/(2*a)
