@@ -22,19 +22,20 @@ as well as to verify your TL classifier.
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
-LOOKAHEAD_WPS = 200 #200 # Number of waypoints we will publish. You can change this number
+LOOKAHEAD_WPS = 50 #200 # Number of waypoints we will publish. You can change this number
 NORMAL_DECEL = 4 # m/s^2
 MAX_DECEL = 9.5 # m/2^2
 NORMAL_ACCEL = 6 # m/s^2
-VELOCITY_30MPH = 13.3 # m/s
+VELOCITY_30MPH = 11.08 # m/s
 REFRESH_RATE = 10 #50 # Hz
+STOP_OFFSET = 8
 
 class WaypointUpdater(object):
     def __init__(self):
         rospy.init_node('waypoint_updater')
         self.current_pose = None
         self.base_waypoints = None
-        self.stop_waypoint_idx = None #750 #286
+        self.stop_waypoint_idx = 752 #750 #286
 		#self.stopped_time = 0.0
 
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
@@ -104,7 +105,7 @@ class WaypointUpdater(object):
         
         # step 3.
         if self.stop_waypoint_idx is not None:
-            if self.stop_waypoint_idx == -1:
+            if self.stop_waypoint_idx == -1 - STOP_OFFSET:
                 # no red light detected, adjust current velocity to 30MPH
                 # calculate the distance the vehicle needs to travel from current velocity to 30mph
                 # d=(vc^2-vo^2)/2a
@@ -126,8 +127,8 @@ class WaypointUpdater(object):
                 # calculate the distance between the current position and the red light stop position. use the nearest waypoint as the current position
                 dist_to_stop = self.distance(self.base_waypoints, nearest_waypoint_idx, self.stop_waypoint_idx)
                 # if the car is getting close to the red light, start braking, otherwise, keep constant speed
-                if dist_to_stop <= normal_brake_dist and dist_to_stop > 4:
-                    rospy.loginfo(self.current_velocity)
+                if dist_to_stop <= normal_brake_dist and dist_to_stop > 3:
+                    #rospy.loginfo("if cond1: brake, current_velocity is %f", self.current_velocity)
                     decel_per_dist = self.current_velocity / (dist_to_stop + 1e-12) #* 2 # provide a factor of 1.5 to be safe
                     for i in range(nearest_waypoint_idx, self.stop_waypoint_idx):
                         dist_curr_to_i = self.distance(self.base_waypoints, nearest_waypoint_idx, i+1)
@@ -136,12 +137,16 @@ class WaypointUpdater(object):
                         velocity_i = velocity_i if velocity_i > 0 else 0.0
                         if i < nearest_waypoint_idx + LOOKAHEAD_WPS:
                             self.set_waypoint_velocity(lookahead_waypoints, i-nearest_waypoint_idx, velocity_i)
-                elif dist_to_stop <= 4:
-                    for i in range(nearest_waypoint_idx, self.stop_waypoint_idx):
+							
+                elif dist_to_stop <= 3:
+                    #rospy.loginfo("if cond2: stop, current_velocity is %f", self.current_velocity)				
+                    for i in range(nearest_waypoint_idx, nearest_waypoint_idx+LOOKAHEAD_WPS):
                         if i < nearest_waypoint_idx + LOOKAHEAD_WPS:
                             self.set_waypoint_velocity(lookahead_waypoints, i-nearest_waypoint_idx, 0.0)
+							
                 # adjust velocity up to 30mph if current velocity is slow and vehicle is still away from red light
-                elif dist_to_stop > 10 and dist_to_stop > 2*normal_brake_dist and self.current_velocity < VELOCITY_30MPH: 
+                elif dist_to_stop > 3 and dist_to_stop > 2*normal_brake_dist and self.current_velocity < VELOCITY_30MPH: 
+                    #rospy.loginfo("if cond2: stop, current_velocity is %f", self.current_velocity)				  
                     # calculate the distance the vehicle needs to travel from current velocity to 30mph
                     # d=(vc^2-vo^2)/2a
                     dist_to_30mph = (VELOCITY_30MPH**2 - self.current_velocity**2) / (2*NORMAL_ACCEL)
@@ -177,6 +182,9 @@ class WaypointUpdater(object):
         # create an empty Lane message to hold the lookahead_waypoints
         lane = Lane()
         lane.waypoints = lookahead_waypoints
+        # rospy.loginfo("waypoint 0 velocity %f", lane.waypoints[0].twist.twist.linear.x)
+        # rospy.loginfo("waypoint 1 velocity %f", lane.waypoints[1].twist.twist.linear.x)
+        # rospy.loginfo("waypoint 2 velocity %f", lane.waypoints[2].twist.twist.linear.x)		
         self.final_waypoints_pub.publish(lane)
 
         self.rate.sleep()
@@ -239,7 +247,7 @@ class WaypointUpdater(object):
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
-        self.stop_waypoint_idx = msg.data
+        self.stop_waypoint_idx = msg.data - STOP_OFFSET
         #pass
 
     def obstacle_cb(self, msg):
