@@ -6,7 +6,7 @@ Name | Email
 ---- | -----
 Jiajun Sun (Lead) | jiajunstanley@gmail.com
 Zhijuan Zhang | zzhijuan@yahoo.com
-Ziyang Li | ziyang7li@gmail.cim
+Ziyang Li | ziyang7li@gmail.com
 Isaac Kargar | kargarisaac@gmail.com
 Lili Dai | flourishlily@gmail.com
 
