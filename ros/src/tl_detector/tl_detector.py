@@ -195,7 +195,6 @@ class TLDetector(object):
                     rospy.logfatal('tl_detect error, state is %s but should be %s', state, light.state)
                     #state = light.state
             return light_wp, state
-        self.waypoints = None
         return -1, TrafficLight.UNKNOWN
 
 if __name__ == '__main__':
