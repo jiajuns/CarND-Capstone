@@ -12,7 +12,7 @@ import cv2
 import yaml
 
 STATE_COUNT_THRESHOLD = 3
-WAYPOINT_THRESHOLD = 200
+WAYPOINT_THRESHOLD = 300
 
 class TLDetector(object):
     def __init__(self):
