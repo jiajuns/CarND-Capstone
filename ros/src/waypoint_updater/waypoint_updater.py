@@ -26,7 +26,7 @@ LOOKAHEAD_WPS = 50 #200 # Number of waypoints we will publish. You can change th
 NORMAL_DECEL = 4 # m/s^2
 MAX_DECEL = 9.5 # m/2^2
 NORMAL_ACCEL = 6 # m/s^2
-VELOCITY_30MPH = 11.08 # m/s
+VELOCITY_30MPH = 4.44 # m/s
 REFRESH_RATE = 10 #50 # Hz
 STOP_OFFSET = 8
 
